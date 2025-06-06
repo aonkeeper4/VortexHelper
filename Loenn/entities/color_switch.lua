@@ -10,7 +10,7 @@ colorSwitch.minimumSize = {16, 16}
 colorSwitch.fieldOrder = {
     "x", "y", "width", "height",
     "blue", "rose", "orange", "lime", "random",
-    "spriteDir", "holdableActivated"
+    "holdableActivated", "spriteDir"
 }
 
 colorSwitch.placements = {
@@ -24,8 +24,8 @@ colorSwitch.placements = {
             orange = true,
             lime = true,
             random = false,
-            spriteDir = "",
-            holdableActivated = false
+            holdableActivated = false,
+            spriteDir = ""
         }
     },
     {
@@ -38,8 +38,8 @@ colorSwitch.placements = {
             orange = true,
             lime = true,
             random = true,
-            spriteDir = "",
-            holdableActivated = false
+            holdableActivated = false,
+            spriteDir = ""
         }
     }
 }

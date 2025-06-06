@@ -35,10 +35,10 @@ public class ColorSwitch : Solid
 
     public ColorSwitch(EntityData data, Vector2 offset)
         : this(data.Position + offset, data.Width, data.Height,
-              data.Bool("blue"), data.Bool("rose"), data.Bool("orange"), data.Bool("lime"), data.Bool("random"), data.Attr("spriteDir", "").Trim().TrimEnd('/'), data.Bool("holdableActivated"))
+              data.Bool("blue"), data.Bool("rose"), data.Bool("orange"), data.Bool("lime"), data.Bool("random"), data.Bool("holdableActivated"), data.Attr("spriteDir", "").Trim().TrimEnd('/'))
     { }
 
-    public ColorSwitch(Vector2 position, int width, int height, bool blue, bool rose, bool orange, bool lime, bool random, string spriteDir, bool holdableActivated)
+    public ColorSwitch(Vector2 position, int width, int height, bool blue, bool rose, bool orange, bool lime, bool random, bool holdableActivated, string spriteDir)
         : base(position, width, height, true)
     {
         this.SurfaceSoundIndex = SurfaceIndex.ZipMover;
