@@ -10,7 +10,7 @@ colorSwitch.minimumSize = {16, 16}
 colorSwitch.fieldOrder = {
     "x", "y", "width", "height",
     "blue", "rose", "orange", "lime", "random",
-    "holdableActivated"
+    "spriteDir", "holdableActivated"
 }
 
 colorSwitch.placements = {
@@ -24,6 +24,7 @@ colorSwitch.placements = {
             orange = true,
             lime = true,
             random = false,
+            spriteDir = "",
             holdableActivated = false
         }
     },
@@ -37,12 +38,12 @@ colorSwitch.placements = {
             orange = true,
             lime = true,
             random = true,
+            spriteDir = "",
             holdableActivated = false
         }
     }
 }
 
-local frame = "objects/VortexHelper/onoff/switch"
 local nine_patch_options = {
     mode = "border",
     borderMode = "repeat",
@@ -53,6 +54,7 @@ local bgColor = {40 / 255, 40 / 255, 40 / 255, 1.0}
 function colorSwitch.sprite(room, entity)
     local x, y = entity.x or 0, entity.y or 0
     local width, height = entity.width or 16, entity.height or 16
+    local frame = (entity.spriteDir or "") ~= "" and (entity.spriteDir .. "/switch") or "objects/VortexHelper/onoff/switch"
 
     return {
         drawableRectangle.fromRectangle("fill", x + 1, y + 1, width - 2, height - 2, bgColor):getDrawableSprite(),
