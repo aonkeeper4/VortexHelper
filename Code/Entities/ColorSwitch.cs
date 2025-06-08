@@ -86,14 +86,19 @@ public class ColorSwitch : Solid
         
         Level level = SceneAs<Level>();
         
-        int currentColorIndex = Array.IndexOf(this.colors, VortexHelperModule.SessionProperties.SessionSwitchBlockColor);
-        this.nextColorIndex = currentColorIndex == -1 ? 0 : currentColorIndex;
-        NextColor(this.colors[this.nextColorIndex], true);
+        MatchNextColorIndexWith(VortexHelperModule.SessionProperties.SessionSwitchBlockColor);
+        NextColor(this.colors[this.nextColorIndex]);
         
         Color bgCol = this.colors[this.nextColorIndex].IsActive() ? RoomDefaultBackgroundColor(level) : this.colors[this.nextColorIndex].GetColor(level);
         Color edgeCol = RoomDefaultEdgeColor(level);
         SetBackgroundColor(bgCol, bgCol);
         SetEdgeColor(edgeCol, edgeCol);
+    }
+
+    private void MatchNextColorIndexWith(VortexHelperSession.SwitchBlockColor color)
+    {
+        int currentColorIndex = Array.IndexOf(this.colors, color);
+        this.nextColorIndex = currentColorIndex == -1 ? 0 : currentColorIndex;
     }
 
     public override void Render()
@@ -226,24 +231,16 @@ public class ColorSwitch : Solid
     public static void UpdateColorSwitches(Scene scene, VortexHelperSession.SwitchBlockColor color)
     {
         foreach (ColorSwitch colorSwitch in scene.Tracker.GetEntities<ColorSwitch>())
-            colorSwitch.NextColor(color, false);
+            colorSwitch.NextColor(color);
     }
 
-    private void NextColor(VortexHelperSession.SwitchBlockColor colorNext, bool start)
+    private void NextColor(VortexHelperSession.SwitchBlockColor nextColor)
     {
         Level level = SceneAs<Level>();
         
-        if (colorNext == this.colors[this.nextColorIndex] && !this.singleColor)
-        {
-            if (!start)
-                this.nextColorIndex++;
-
-            if (this.nextColorIndex > this.colors.Length - 1)
-                this.nextColorIndex = 0;
-
-            if (this.colors[this.nextColorIndex].IsActive())
-                this.nextColorIndex++;
-        }
+        MatchNextColorIndexWith(nextColor);
+        this.nextColorIndex++;
+        this.nextColorIndex %= this.colors.Length;
         
         this.BackgroundColor = this.colors[this.nextColorIndex].IsActive() ? RoomDefaultBackgroundColor(level) : this.colors[this.nextColorIndex].GetColor(level);
     }
