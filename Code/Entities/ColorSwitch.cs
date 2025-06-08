@@ -28,7 +28,7 @@ public class ColorSwitch : Solid
     private Vector2 scaleStrength = Vector2.One;
 
     private readonly VortexHelperSession.SwitchBlockColor[] colors;
-    private int nextColorIndex = 0;
+    private int nextColorIndex;
     private readonly bool singleColor, random;
 
     private readonly bool holdableActivated;
@@ -86,12 +86,14 @@ public class ColorSwitch : Solid
         
         Level level = SceneAs<Level>();
         
+        int currentColorIndex = Array.IndexOf(this.colors, VortexHelperModule.SessionProperties.SessionSwitchBlockColor);
+        this.nextColorIndex = currentColorIndex == -1 ? 0 : currentColorIndex;
+        NextColor(this.colors[this.nextColorIndex], true);
+        
         Color bgCol = this.colors[this.nextColorIndex].IsActive() ? RoomDefaultBackgroundColor(level) : this.colors[this.nextColorIndex].GetColor(level);
         Color edgeCol = RoomDefaultEdgeColor(level);
         SetBackgroundColor(bgCol, bgCol);
         SetEdgeColor(edgeCol, edgeCol);
-        
-        NextColor(this.colors[this.nextColorIndex], true);
     }
 
     public override void Render()
@@ -319,6 +321,7 @@ public class ColorSwitch : Solid
 
         private static void TheoCrystal_OnCollideH(On.Celeste.TheoCrystal.orig_OnCollideH orig, TheoCrystal self, CollisionData data) => ActivateSwitch(() => orig(self, data), data, () => true);
         private static void TheoCrystal_OnCollideV(On.Celeste.TheoCrystal.orig_OnCollideV orig, TheoCrystal self, CollisionData data) => ActivateSwitch(() => orig(self, data), data, () => self.Speed.Y > 160f || self.Speed.Y < 0f);
+        
         private static void Glider_OnCollideH(On.Celeste.Glider.orig_OnCollideH orig, Glider self, CollisionData data) => ActivateSwitch(() => orig(self, data), data, () => true);
         private static void Glider_OnCollideV(On.Celeste.Glider.orig_OnCollideV orig, Glider self, CollisionData data) => ActivateSwitch(() => orig(self, data), data, () => self.Speed.Y < 0f);
     }
