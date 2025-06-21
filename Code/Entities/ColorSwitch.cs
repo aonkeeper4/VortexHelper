@@ -1,5 +1,7 @@
 ﻿using Celeste.Mod.Entities;
+using Celeste.Mod.VortexHelper.Misc;
 using Celeste.Mod.VortexHelper.Misc.Extensions;
+using IL.Celeste.Pico8;
 using Microsoft.Xna.Framework;
 using Monocle;
 using System;
@@ -20,12 +22,12 @@ public class ColorSwitch : Solid
     private static Color RoomDefaultBackgroundColor(Level level) => level.Tracker.GetEntity<SwitchBlockColorController>()?.SwitchBackgroundColor ?? DefaultBackgroundColor;
     private static Color RoomDefaultEdgeColor(Level level) => level.Tracker.GetEntity<SwitchBlockColorController>()?.SwitchEdgeColor ?? DefaultEdgeColor;
 
-    private Color BackgroundColor;
-    private Color EdgeColor;
+    private Color targetEdgeColor, targetBackgroundColor;
     private Color currentEdgeColor, currentBackgroundColor;
+    private float edgeColorLerp, backgroundColorLerp;
 
     private Vector2 scale = Vector2.One;
-    private Vector2 scaleStrength = Vector2.One;
+    private readonly Vector2 scaleStrength = Vector2.One;
 
     private readonly VortexHelperSession.SwitchBlockColor[] colors;
     private int nextColorIndex;
@@ -35,10 +37,15 @@ public class ColorSwitch : Solid
 
     public ColorSwitch(EntityData data, Vector2 offset)
         : this(data.Position + offset, data.Width, data.Height,
-              data.Bool("blue"), data.Bool("rose"), data.Bool("orange"), data.Bool("lime"), data.Bool("random"), data.Bool("holdableActivated"), data.Attr("spriteDir", "").Trim().TrimEnd('/'))
+              data.Bool("blue"), data.Bool("rose"), data.Bool("orange"), data.Bool("lime"),
+              data.Bool("random"), data.Bool("holdableActivated"), data.Bool("dreamTunnelActivated"),
+              data.Attr("spriteDir").Trim().TrimEnd('/'))
     { }
 
-    public ColorSwitch(Vector2 position, int width, int height, bool blue, bool rose, bool orange, bool lime, bool random, bool holdableActivated, string spriteDir)
+    public ColorSwitch(Vector2 position, int width, int height,
+        bool blue, bool rose, bool orange, bool lime,
+        bool random, bool holdableActivated, bool dreamTunnelActivated,
+        string spriteDir)
         : base(position, width, height, true)
     {
         this.SurfaceSoundIndex = SurfaceIndex.ZipMover;
@@ -75,8 +82,10 @@ public class ColorSwitch : Solid
         if (height > 32)
             this.scaleStrength.Y = height / 32f;
 
-        this.holdableActivated = holdableActivated;
         this.OnDashCollide = Dashed;
+        this.holdableActivated = holdableActivated;
+        if (dreamTunnelActivated && CommunalHelperInterop.TryCreateDreamTunnelInteraction(DreamTunnelEntered, DreamTunnelExited, out Component interaction))
+            Add(interaction);
     }
 
     public override void Awake(Scene scene)
@@ -87,10 +96,10 @@ public class ColorSwitch : Solid
 
         NextColor(VortexHelperModule.SessionProperties.SessionSwitchBlockColor);
         
-        Color bgCol = this.colors[this.nextColorIndex].IsActive() ? RoomDefaultBackgroundColor(level) : this.colors[this.nextColorIndex].GetColor(level);
         Color edgeCol = RoomDefaultEdgeColor(level);
-        SetBackgroundColor(bgCol, bgCol);
+        Color bgCol = this.colors[this.nextColorIndex].IsActive() ? RoomDefaultBackgroundColor(level) : this.colors[this.nextColorIndex].GetColor(level);
         SetEdgeColor(edgeCol, edgeCol);
+        SetBackgroundColor(bgCol, bgCol);
     }
 
     public override void Render()
@@ -107,7 +116,7 @@ public class ColorSwitch : Solid
         Color defaultCol = RoomDefaultBackgroundColor(SceneAs<Level>());
         Color col = this.random
             ? Color.Lerp(defaultCol, Color.White, (float) (0.05f * Math.Sin(this.Scene.TimeActive * 5f)) + 0.05f)
-            : this.BackgroundColor != defaultCol
+            : this.targetBackgroundColor != defaultCol
                 ? Color.Lerp(this.currentBackgroundColor, Color.Black, 0.2f)
                 : this.currentBackgroundColor;
 
@@ -152,23 +161,26 @@ public class ColorSwitch : Solid
         if (this.Scene.OnInterval(0.1f))
             this.seed++;
 
-        float t = Calc.Min(1f, 4f * Engine.DeltaTime);
-        this.currentEdgeColor = Color.Lerp(this.currentEdgeColor, this.EdgeColor, t);
-        this.currentBackgroundColor = Color.Lerp(this.currentBackgroundColor, this.BackgroundColor, t);
+        this.edgeColorLerp = Calc.Approach(this.edgeColorLerp, 1f, Engine.DeltaTime / 8f);
+        this.backgroundColorLerp = Calc.Approach(this.backgroundColorLerp, 1f, Engine.DeltaTime / 8f);
+        this.currentEdgeColor = Color.Lerp(currentEdgeColor, targetEdgeColor, Ease.ExpoOut(edgeColorLerp));
+        this.currentBackgroundColor = Color.Lerp(currentBackgroundColor, targetBackgroundColor, Ease.ExpoOut(backgroundColorLerp));
 
         this.scale = Calc.Approach(this.scale, Vector2.One, Engine.DeltaTime * 4f);
     }
 
     private void SetEdgeColor(Color targetColor, Color currentColor)
     {
-        this.EdgeColor = targetColor;
+        this.targetEdgeColor = targetColor;
         this.currentEdgeColor = currentColor;
+        this.edgeColorLerp = 0f;
     }
-
+    
     private void SetBackgroundColor(Color targetColor, Color currentColor)
     {
-        this.BackgroundColor = targetColor;
+        this.targetBackgroundColor = targetColor;
         this.currentBackgroundColor = currentColor;
+        this.backgroundColorLerp = 0f;
     }
 
     private DashCollisionResults Dashed(Player player, Vector2 direction)
@@ -187,6 +199,9 @@ public class ColorSwitch : Solid
         return DashCollisionResults.Rebound;
     }
 
+    private void DreamTunnelEntered(Player player) => Switch(((this.Center - player.Center) / new Vector2(this.Width, this.Height)).FourWayNormal());
+    private void DreamTunnelExited(Player player) { }
+
     public void Switch(Vector2 direction)
     {
         Level level = SceneAs<Level>();
@@ -204,7 +219,7 @@ public class ColorSwitch : Solid
 
         UpdateColorSwitches(this.Scene, this.colors[this.nextColorIndex]);
         SetEdgeColor(RoomDefaultEdgeColor(level), col);
-        this.currentBackgroundColor = Color.White;
+        SetBackgroundColor(this.targetBackgroundColor, Color.White);
 
         Audio.Play(CustomSFX.game_colorSwitch_hit, this.Center);
         if (SwitchBlock.RoomHasSwitchBlock(this.Scene, VortexHelperModule.SessionProperties.SessionSwitchBlockColor))
@@ -233,7 +248,7 @@ public class ColorSwitch : Solid
         int currentColorIndex = Array.IndexOf(this.colors, nextColor);
         this.nextColorIndex = currentColorIndex == -1 ? 0 : (currentColorIndex + 1) % this.colors.Length;
         
-        this.BackgroundColor = this.colors[this.nextColorIndex].IsActive() ? RoomDefaultBackgroundColor(level) : this.colors[this.nextColorIndex].GetColor(level);
+        this.targetBackgroundColor = this.colors[this.nextColorIndex].IsActive() ? RoomDefaultBackgroundColor(level) : this.colors[this.nextColorIndex].GetColor(level);
     }
 
     private void SmashParticles(Vector2 dir, ParticleType smashParticle)
@@ -282,6 +297,7 @@ public class ColorSwitch : Solid
         {
             On.Celeste.TheoCrystal.OnCollideH += TheoCrystal_OnCollideH;
             On.Celeste.TheoCrystal.OnCollideV += TheoCrystal_OnCollideV;
+            
             On.Celeste.Glider.OnCollideH += Glider_OnCollideH;
             On.Celeste.Glider.OnCollideV += Glider_OnCollideV;
         }
@@ -290,6 +306,7 @@ public class ColorSwitch : Solid
         {
             On.Celeste.TheoCrystal.OnCollideH -= TheoCrystal_OnCollideH;
             On.Celeste.TheoCrystal.OnCollideV -= TheoCrystal_OnCollideV;
+            
             On.Celeste.Glider.OnCollideH -= Glider_OnCollideH;
             On.Celeste.Glider.OnCollideV -= Glider_OnCollideV;
         }
@@ -297,12 +314,10 @@ public class ColorSwitch : Solid
         private static void ActivateSwitch(Action callOrig, CollisionData data, Func<bool> speedChecker)
         {
             if (data.Hit is ColorSwitch colorSwitch
-                && colorSwitch.holdableActivated
-                && !colorSwitch.colors[colorSwitch.nextColorIndex].IsActive()
-                && speedChecker())
-            {
+                    && colorSwitch.holdableActivated
+                    && !colorSwitch.colors[colorSwitch.nextColorIndex].IsActive()
+                    && speedChecker())
                 colorSwitch.Switch(data.Direction);
-            }
 
             callOrig();
         }

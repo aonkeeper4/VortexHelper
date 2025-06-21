@@ -35,8 +35,9 @@ entities.VortexHelper/ColorSwitch.attributes.description.rose=Enables switch to 
 entities.VortexHelper/ColorSwitch.attributes.description.orange=Enables switch to ORANGE through this Color Switch.
 entities.VortexHelper/ColorSwitch.attributes.description.lime=Enables switch to LIME through this Color Switch.
 entities.VortexHelper/ColorSwitch.attributes.description.random=Makes this Color Switch randomly pick one of its enabled colors.
-entities.VortexHelper/ColorSwitch.attributes.description.spriteDir=Directory relative to Graphics/Atlases/Gameplay to use for custom sprites.\nMust contain an image named "switch" that will be used for the sprites of this block.
 entities.VortexHelper/ColorSwitch.attributes.description.holdableActivated=Makes collisions with holdables (Jellyfish and Theo Crystals) activate this Color Switch.
+entities.VortexHelper/ColorSwitch.attributes.description.dreamTunnelActivated=Makes dashing through this Color Switch with a Dream Tunnel Dash (from CommunalHelper) activate it.
+entities.VortexHelper/ColorSwitch.attributes.description.spriteDir=Directory relative to Graphics/Atlases/Gameplay to use for custom sprites.\nMust contain an image named "switch" that will be used for the sprites of this block.
 
 # Vortex Switch Gate
 entities.VortexHelper/VortexSwitchGate.placements.name.crush=Custom Switch Gate (Crush)

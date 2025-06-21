@@ -74,6 +74,7 @@ public class VortexHelperModule : EverestModule
         Util.LoadDelegates();
 
         typeof(GravityHelperInterop.Imports).ModInterop();
+        typeof(CommunalHelperInterop.DashStatesImports).ModInterop();
     }
 
     public override void Unload()
